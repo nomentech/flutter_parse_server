@@ -39,6 +39,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   ParseResponse response;
   ParseUser parseUser;
+  ParseObject parseObject;
 
   @override
   void initState() {
@@ -61,15 +62,66 @@ class _MyHomePageState extends State<MyHomePage> {
         child: IndexedStack(
           index: _currentIndex,
           children: <Widget>[
-            Text(
-              'List Page',
-            ),
+            FutureBuilder(
+                future: getObjects(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    List items = snapshot.data;
+                    return ListView.builder(
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ListTile(
+                              leading: IconButton(
+                                icon: Icon(Icons.edit),
+                                onPressed: () {
+                                  if (user != null) {
+                                    updateObject(items[index]);
+                                  } else {
+                                    setState(() {
+                                      _currentIndex = 1;
+                                    });
+                                  }
+                                },
+                              ),
+                              title: Text(items[index]['Name']),
+                              subtitle: Text(items[index]['Description']),
+                              trailing: IconButton(
+                                icon: Icon(Icons.delete),
+                                onPressed: () {
+                                  if (user != null) {
+                                    deleteObject(items[index]);
+                                  } else {
+                                    setState(() {
+                                      _currentIndex = 1;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                        itemCount: items.length);
+                  } else {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                }),
             user == null ? signupOrLogin() : profile(),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          if (user != null) {
+            addObject();
+          } else {
+            setState(() {
+              _currentIndex = 1;
+            });
+          }
+        },
         tooltip: 'Add',
         child: Icon(Icons.add),
       ),
@@ -177,6 +229,61 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     } else {
       print(response.error.message);
+    }
+  }
+
+  void addObject() async {
+    parseObject = ParseObject('Item')
+      ..set('Name', 'item1')
+      ..set('Description', 'Item One');
+    response = await parseObject.save();
+    if (response.success) {
+      print(response.results);
+      setState(() {
+        _currentIndex = 0;
+      });
+    } else {
+      print(response.error);
+    }
+  }
+
+  Future<List> getObjects() async {
+    parseObject = ParseObject('Item');
+    response = await parseObject.getAll();
+
+    if (response.success) {
+      print(response.results);
+      return response.results;
+    } else {
+      print(response.error);
+      return null;
+    }
+  }
+
+  void updateObject(ParseObject object) async {
+    object..set('Name', 'ItemUpdaetd')..set('Description', 'Item Updated');
+    response = await object.save();
+
+    if (response.success) {
+      print(response.results);
+      setState(() {
+        _currentIndex = 0;
+      });
+    } else {
+      print(response.error);
+    }
+  }
+
+  void deleteObject(ParseObject object) async {
+    response = await object.delete();
+
+    if (response.success) {
+      print(response.results);
+      setState(() {
+        _currentIndex = 0;
+      });
+    } else {
+      print(response.error);
     }
   }
 }
