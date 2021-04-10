@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  SharedPreferences.setMockInitialValues({});
   runApp(MyApp());
 }
 
@@ -48,7 +46,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> init() async {
-    await Parse().initialize(appId, serverUrl);
+    await Parse().initialize(
+      appId,
+      serverUrl,
+      coreStore: await CoreStoreSharedPrefsImp
+          .getInstance(), // SharedPref is the default store
+    );
     user = await ParseUser.currentUser();
   }
 
@@ -208,7 +211,7 @@ class _MyHomePageState extends State<MyHomePage> {
         response = await parseUser.login();
         break;
       case 'logout':
-        response = await parseUser.logout();
+        response = await parseUser.logout(deleteLocalUserData: true);
         break;
       case 'reset':
         response = await parseUser.requestPasswordReset();
@@ -238,7 +241,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ..set('Description', 'Item One');
     response = await parseObject.save();
     if (response.success) {
-      print(response.results);
       setState(() {
         _currentIndex = 0;
       });
@@ -252,7 +254,6 @@ class _MyHomePageState extends State<MyHomePage> {
     response = await parseObject.getAll();
 
     if (response.success) {
-      print(response.results);
       return response.results;
     } else {
       print(response.error);
@@ -265,7 +266,6 @@ class _MyHomePageState extends State<MyHomePage> {
     response = await object.save();
 
     if (response.success) {
-      print(response.results);
       setState(() {
         _currentIndex = 0;
       });
@@ -278,7 +278,6 @@ class _MyHomePageState extends State<MyHomePage> {
     response = await object.delete();
 
     if (response.success) {
-      print(response.results);
       setState(() {
         _currentIndex = 0;
       });
