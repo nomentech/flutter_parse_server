@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart' as DotEnv;
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-void main() {
+void main() async {
+  await DotEnv.load(fileName: ".env");
   runApp(MyApp());
 }
 
@@ -29,8 +32,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final appId = '123456789';
-  final serverUrl = 'http://192.168.1.200:1337/parse';
+  final appId = DotEnv.env['appId'];
+  final serverUrl = DotEnv.env['serverUrl'];
 
   int _currentIndex = 0;
   dynamic user;
@@ -194,6 +197,17 @@ class _MyHomePageState extends State<MyHomePage> {
               authOps('verify');
             },
             child: Text('Send Verification Email'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () async {
+              final wxAppId = DotEnv.env['wxAppId'];
+              final redirectUri = DotEnv.env['redirectUri'];
+              final wxloginUrl =
+                  'https://open.weixin.qq.com/connect/oauth2/authorize?appid=$wxAppId&redirect_uri=$redirectUri&response_type=code&scope=snsapi_userinfo&state=STATE123#wechat_redirect';
+              await launch(wxloginUrl);
+            },
+            child: Text('Wechat Login'),
           ),
         ],
       ),
