@@ -21,7 +21,11 @@ jobs:
     - name: "Web Build 🔧"
       run: |
         flutter pub get
-        flutter build web
+        flutter build web \
+          --dart-define=appId=${{secrets.APPID}} \
+          --dart-define=serverUrl=${{secrets.SERVER_URL}} \
+          --dart-define=wxAppId=${{secrets.WX_APPID}} \
+          --dart-define=redirectUri=${{secrets.REDIRECT_URI}}
     - name: "Web Deploy 🚀"
       # https://github.com/JamesIves/github-pages-deploy-action
       uses: JamesIves/github-pages-deploy-action@4.1.0
