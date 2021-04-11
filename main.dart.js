@@ -57591,7 +57591,7 @@ F.a4O.prototype={
 $0:function(){var s=0,r=P.K(t.P)
 var $async$$0=P.F(function(a,b){if(a===1)return P.H(b,r)
 while(true)switch(s){case 0:s=2
-return P.y(T.a8w("https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx128b264d86a1c6e1&redirect_uri=http://api.nomentech.com/wxlogin&response_type=code&scope=snsapi_userinfo&state=STATE123#wechat_redirect"),$async$$0)
+return P.y(T.a8w("https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx84ce9d7f5c17a570&redirect_uri=http://api.nomentech.com/wxlogin&response_type=code&scope=snsapi_userinfo&state=STATE123#wechat_redirect"),$async$$0)
 case 2:return P.I(null,r)}})
 return P.J($async$$0,r)},
 $S:380}
