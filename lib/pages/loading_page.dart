@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+
+import 'package:flutter_parse_server/models/user.dart';
 import 'package:flutter_parse_server/pages/home_page.dart';
 import 'package:flutter_parse_server/pages/login_page.dart';
 import 'package:flutter_parse_server/repositories/diet_plan_provider_api.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
 class LoadingPage extends StatefulWidget {
   @override
@@ -30,15 +33,23 @@ class _LoadingPageState extends State<LoadingPage> {
         serverUrl,
         coreStore: await CoreStoreSharedPrefsImp
             .getInstance(), // SharedPref is the default store
+        appName: kIsWeb ? "MyApp" : null,
+        appVersion: kIsWeb ? "Version 1" : null,
+        appPackageName: kIsWeb ? "com.example.myapp" : null,
+        // clientCreator: (
+        //         {bool sendSessionId, SecurityContext securityContext}) =>
+        //     ParseDioClient(
+        //         sendSessionId: sendSessionId, securityContext: securityContext),
       );
 
       final ParseResponse response = await Parse().healthCheck();
       if (response.success) {
-        final ParseUser user = await ParseUser.currentUser();
+        User user = await ParseUser.currentUser(customUserObject: User.clone());
+        // await user.getUpdatedUser();
         if (user == null) {
           _redirectToPage(context, LoginPage());
         } else {
-          _redirectToPage(context, HomePage(DietPlanProviderApi()));
+          _redirectToPage(context, HomePage(DietPlanProviderApi(), user));
         }
       } else {
         print(

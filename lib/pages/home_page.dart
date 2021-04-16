@@ -1,23 +1,32 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
+import 'package:flutter_parse_server/models/user.dart';
 import 'package:flutter_parse_server/base/api_response.dart';
 import 'package:flutter_parse_server/models/diet_plan.dart';
 import 'package:flutter_parse_server/repositories/diet_plan_provider_contract.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage(this._dietPlanProvider);
+  const HomePage(this._dietPlanProvider, this._user);
 
   final DietPlanProviderContract _dietPlanProvider;
+  final User _user;
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
+  bool _isUploading = false;
+  final ImagePicker picker = ImagePicker();
+
   List<DietPlan> randomDietPlans = <DietPlan>[];
 
   @override
@@ -54,7 +63,13 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        body: _showDietList(),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _showDietList(),
+            _showProfile(),
+          ],
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
             final DietPlan dietPlan =
@@ -67,8 +82,62 @@ class _HomePageState extends State<HomePage> {
           tooltip: 'Add Diet Plans',
           child: const Icon(Icons.add),
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomNavBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index)),
       ),
     );
+  }
+
+  Widget _showProfile() {
+    String imageUrl;
+    if (widget._user.displayPicture == null) {
+      imageUrl = 'https://thinkforactions.com/images/team/avatar.png';
+    } else {
+      imageUrl = widget._user.displayPicture;
+    }
+
+    return Center(
+      child: _isUploading
+          ? CircularProgressIndicator()
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                InkWell(
+                  onTap: () {
+                    updateDisplayPicture();
+                  },
+                  child: Container(
+                      height: 100, width: 100, child: Image.network(imageUrl)),
+                ),
+                SizedBox(height: 10),
+                Text(widget._user.username),
+                SizedBox(height: 10),
+                Text(widget._user.emailAddress),
+              ],
+            ),
+    );
+  }
+
+  void updateDisplayPicture() async {
+    PickedFile pickedFile = await picker.getImage(source: ImageSource.gallery);
+    ParseFileBase parseFile;
+    if (kIsWeb) {
+      //Seems weird, but this lets you get the data from the selected file as an Uint8List very easily.
+      ParseWebFile file =
+          ParseWebFile(null, name: 'displayPicture', url: pickedFile.path);
+      await file.download();
+      parseFile = ParseWebFile(file.file, name: file.name);
+    } else {
+      parseFile = ParseFile(File(pickedFile.path));
+    }
+    setState(() => _isUploading = true);
+    await parseFile.upload();
+    widget._user.displayPicture = parseFile.url;
+    await widget._user.save();
+    await widget._user.getUpdatedUser();
+    setState(() => _isUploading = false);
   }
 
   Widget _showDietList() {
@@ -138,4 +207,33 @@ class _HomePageState extends State<HomePage> {
       '{"className":"Diet_Plans","Name":"Low Carb","Description":"Low Carb diet, main focus on quality fats and protein.","Fat":35,"Carbs":25,"Protein":40,"Status":true},'
       '{"className":"Diet_Plans","Name":"Paleo","Description":"Paleo diet.","Fat":60,"Carbs":25,"Protein":10,"Status":false},'
       '{"className":"Diet_Plans","Name":"Ketogenic","Description":"High quality fats, low carbs.","Fat":65,"Carbs":5,"Protein":30,"Status":true}]';
+}
+
+class BottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const BottomNavBar({
+    Key key,
+    @required this.currentIndex,
+    @required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.list),
+          label: 'List',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+      currentIndex: currentIndex,
+      onTap: onTap,
+    );
+  }
 }
